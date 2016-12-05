@@ -35,7 +35,8 @@ class coalaJSONTest(unittest.TestCase):
             retval, output = execute_coala(coala.main, 'coala', '--json',
                                            '-c', os.devnull,
                                            '-b', 'LineCountTestBear',
-                                           '-f', re.escape(filename))
+                                           '-f', re.escape(filename),
+                                           stdout_only=True)
             output = json.loads(output)
             self.assertEqual(output['results']['default'][0]['message'],
                              'This file has 1 lines.')
@@ -53,7 +54,9 @@ class coalaJSONTest(unittest.TestCase):
 
     def test_show_all_bears(self):
         with bear_test_module():
-            retval, output = execute_coala(coala.main, 'coala', '--json', '-B')
+            retval, output = execute_coala(coala.main,
+                                           'coala', '--json', '-B',
+                                           stdout_only=True)
             self.assertEqual(retval, 0)
             output = json.loads(output)
             self.assertEqual(len(output['bears']), 6)
