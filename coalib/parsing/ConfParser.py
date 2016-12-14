@@ -11,12 +11,14 @@ from coalib.settings.Setting import Setting
 class ConfParser:
 
     def __init__(self,
-                 key_value_delimiters=('=',),
+                 key_value_define_delimiters=('=',),
+                 key_value_append_delimiters=('+=',),
                  comment_seperators=('#',),
                  key_delimiters=(',', ' '),
                  section_name_surroundings=MappingProxyType({'[': ']'}),
                  remove_empty_iter_elements=True):
-        self.line_parser = LineParser(key_value_delimiters,
+        self.line_parser = LineParser(key_value_define_delimiters,
+                                      key_value_append_delimiters,
                                       comment_seperators,
                                       key_delimiters,
                                       section_name_surroundings)
@@ -86,7 +88,11 @@ class ConfParser:
         current_keys = []
 
         for line in lines:
-            section_name, keys, value, comment = self.line_parser.parse(line)
+            (section_name,
+             keys,
+             value,
+             append,
+             comment) = self.line_parser.parse(line)
 
             if comment != '':
                 self.__add_comment(current_section, comment, origin)
@@ -113,6 +119,7 @@ class ConfParser:
                         Setting(key,
                                 value,
                                 origin,
+                                to_append=append,
                                 # Start ignoring PEP8Bear, PycodestyleBear*
                                 # they fail to resolve this
                                 remove_empty_iter_elements=
@@ -126,6 +133,7 @@ class ConfParser:
                             Setting(key,
                                     value,
                                     origin,
+                                    to_append=append,
                                     # Start ignoring PEP8Bear, PycodestyleBear*
                                     # they fail to resolve this
                                     remove_empty_iter_elements=
