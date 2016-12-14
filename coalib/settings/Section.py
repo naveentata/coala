@@ -14,6 +14,7 @@ def append_to_sections(sections,
                        key,
                        value,
                        origin,
+                       to_append=False,
                        section_name=None,
                        from_cli=False):
     """
@@ -24,6 +25,8 @@ def append_to_sections(sections,
     :param key:          The key of the setting to add.
     :param value:        The value of the setting to add.
     :param origin:       The origin value of the setting to add.
+    :param to_append:    The boolean value if setting value needs to be
+                         appended to a setting in the defaults of a section.
     :param section_name: The name of the section to add to.
     :param from_cli:     Whether or not this data comes from the CLI.
     """
@@ -36,14 +39,53 @@ def append_to_sections(sections,
     if not section_name.lower() in sections:
         sections[section_name.lower()] = Section(section_name)
 
-    sections[section_name.lower()].append(
-        Setting(key, str(value), origin, from_cli=from_cli))
+    sections[section_name.lower()].append(Setting(
+        key, str(value), origin, to_append=to_append, from_cli=from_cli))
 
 
 @generate_repr()
 class Section:
     """
     This class holds a set of settings.
+
+    To add settings and sections to a dictionary of sections we can use
+    ``append_to_sections``:
+
+    >>> sections = {}
+    >>> append_to_sections(sections,
+    ...                    'test1',
+    ...                    'val',
+    ...                    'origin',
+    ...                    section_name='all')
+    >>> 'all' in sections
+    True
+    >>> len(sections)
+    1
+    >>> str(sections)
+    "{'all': <Section object(contents=OrderedDict([('test1', ..."
+
+    We can also add settings that can be appended to other settings. Basically
+    it takes the default value of the setting which resides in the defaults of
+    the section and appends the value of the setting in the second and returns
+    the value of the setting:
+
+    >>> append_to_sections(sections,
+    ...                    'test1',
+    ...                    'val2',
+    ...                    'origin',
+    ...                    to_append=True,
+    ...                    section_name='all.python')
+
+    When the section has no defaults:
+
+    >>> str(sections['all.python']['test1'])
+    'val2'
+
+    After assigning defaults:
+
+    >>> sections['all.python'].set_default_section(sections)
+    >>> str(sections['all.python']['test1'])
+    'val, val2'
     """
 
     @staticmethod
@@ -161,6 +203,11 @@ class Section:
 
         res = self.contents.get(key, None)
         if res is not None:
+            if res.to_append and self.defaults and res.key in self.defaults:
+                return Setting(
+                    key=key,
+                    value=self.defaults[key].value + ', ' + res.value,
+                    origin=res.origin)
             return res
 
         if self.defaults is None or ignore_defaults:
@@ -169,7 +216,7 @@ class Section:
         return self.defaults[key]
 
     def __str__(self):
-        value_list = ', '.join(key + ' : ' + repr(str(self.contents[key]))
+        value_list = ', '.join(key + ' : ' + repr(str(self[key]))
                                for key in self.contents)
         return self.name + ' {' + value_list + '}'
 
