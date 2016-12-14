@@ -14,6 +14,7 @@ def append_to_sections(sections,
                        key,
                        value,
                        origin,
+                       to_append=False,
                        section_name=None,
                        from_cli=False):
     """
@@ -24,6 +25,8 @@ def append_to_sections(sections,
     :param key:          The key of the setting to add.
     :param value:        The value of the setting to add.
     :param origin:       The origin value of the setting to add.
+    :param to_append:    The boolean value if setting value needs to appended
+                         to a setting in the defaults of a section.
     :param section_name: The name of the section to add to.
     :param from_cli:     Whether or not this data comes from the CLI.
     """
@@ -36,8 +39,8 @@ def append_to_sections(sections,
     if not section_name.lower() in sections:
         sections[section_name.lower()] = Section(section_name)
 
-    sections[section_name.lower()].append(
-        Setting(key, str(value), origin, from_cli=from_cli))
+    sections[section_name.lower()].append(Setting(
+        key, str(value), origin, to_append=to_append, from_cli=from_cli))
 
 
 @generate_repr()
@@ -161,6 +164,11 @@ class Section:
 
         res = self.contents.get(key, None)
         if res is not None:
+            if res.to_append and self.defaults and (res.key in self.defaults):
+                return Setting(
+                    key=key,
+                    value=self.defaults[key].value + ',' + res.value,
+                    origin=res.origin)
             return res
 
         if self.defaults is None or ignore_defaults:
@@ -169,7 +177,7 @@ class Section:
         return self.defaults[key]
 
     def __str__(self):
-        value_list = ', '.join(key + ' : ' + repr(str(self.contents[key]))
+        value_list = ', '.join(key + ' : ' + repr(str(self[key]))
                                for key in self.contents)
         return self.name + ' {' + value_list + '}'
 
