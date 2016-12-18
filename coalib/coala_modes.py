@@ -1,4 +1,4 @@
-def mode_normal(console_printer, log_printer):
+def mode_normal(console_printer, log_printer, args, debug=False):
     import functools
 
     from coalib.coala_main import run_coala
@@ -14,7 +14,9 @@ def mode_normal(console_printer, log_printer):
         acquire_settings=acquire_settings,
         print_section_beginning=partial_print_sec_beg,
         nothing_done=nothing_done,
-        console_printer=console_printer)
+        console_printer=console_printer,
+        args=args,
+        debug=debug)
 
     return exitcode
 
@@ -84,10 +86,10 @@ def mode_json(args):
     return 0 if args.show_bears else exitcode
 
 
-def mode_format():
+def mode_format(debug=False):
     from coalib.coala_main import run_coala
     from coalib.output.ConsoleInteraction import print_results_formatted
 
     _, exitcode, _ = run_coala(
-            print_results=print_results_formatted)
+            print_results=print_results_formatted, debug=debug)
     return exitcode

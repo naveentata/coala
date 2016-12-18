@@ -223,6 +223,10 @@ To run coala without user interaction, run the `coala --non-interactive`,
         '-n', '--no-orig', const=True, action='store_const',
         help="don't create .orig backup files before patching")
 
+    misc_group.add_argument(
+        '--debug', const=True, action='store_const',
+        help='run coala in debug mode')
+
     try:  # pragma: no cover
         # Auto completion should be optional, because of somewhat complicated
         # setup.

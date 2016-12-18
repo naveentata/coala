@@ -18,8 +18,10 @@ from coalib.output.printers.LogPrinter import LogPrinter
 from coalib.parsing.DefaultArgParser import default_arg_parser
 from coalib.misc.Exceptions import get_exitcode
 
+from ipdb import launch_ipdb_on_exception
 
-def main():
+
+def main(debug=False):
     configure_logging()
 
     try:
@@ -69,15 +71,20 @@ def main():
             return 0
 
     except BaseException as exception:  # pylint: disable=broad-except
+        if debug:
+            raise
+        if args.debug:
+            with launch_ipdb_on_exception():
+                raise
         return get_exitcode(exception, log_printer)
 
     if args.non_interactive:
-        return mode_non_interactive(console_printer, args)
+        return mode_non_interactive(console_printer, args, debug=debug)
 
     if args.format:
-        return mode_format()
+        return mode_format(debug=debug)
 
-    return mode_normal(console_printer, log_printer)
+    return mode_normal(console_printer, log_printer, args, debug=debug)
 
 
 if __name__ == '__main__':  # pragma: no cover
