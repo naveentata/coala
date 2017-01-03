@@ -86,7 +86,7 @@ def typed_ordered_dict(key_type, value_type, default):
         for key, value in OrderedDict(setting).items())
 
 
-@generate_repr('key', 'value', 'origin', 'from_cli')
+@generate_repr('key', 'value', 'to_append', 'origin', 'from_cli')
 class Setting(StringConverter):
     """
     A Setting consists mainly of a key and a value. It mainly offers many
