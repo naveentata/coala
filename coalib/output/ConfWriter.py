@@ -11,7 +11,8 @@ class ConfWriter(ClosableObject):
 
     def __init__(self,
                  file_name,
-                 key_value_delimiters=('=',),
+                 key_value_define_delimiters=('=',),
+                 key_value_append_delimiters=('+=',),
                  comment_separators=('#',),
                  key_delimiters=(',', ' '),
                  section_name_surroundings=MappingProxyType({'[': ']'}),
@@ -20,7 +21,8 @@ class ConfWriter(ClosableObject):
         ClosableObject.__init__(self)
         self.__file_name = file_name
         self.__file = open(self.__file_name, 'w')
-        self.__key_value_delimiters = key_value_delimiters
+        self.__key_value_define_delimiters = key_value_define_delimiters
+        self.__key_value_append_delimiters = key_value_append_delimiters
         self.__comment_separators = comment_separators
         self.__key_delimiters = key_delimiters
         self.__section_name_surroundings = section_name_surroundings
@@ -29,7 +31,8 @@ class ConfWriter(ClosableObject):
         self.__closed = False
 
         self.__key_delimiter = self.__key_delimiters[0]
-        self.__key_value_delimiter = self.__key_value_delimiters[0]
+        self.__key_value_define_delimiter = key_value_define_delimiters[0]
+        self.__key_value_append_delimiter = key_value_append_delimiters[0]
         (self.__section_name_surrounding_beg,
          self.__section_name_surrounding_end) = (
             tuple(self.__section_name_surroundings.items())[0])
@@ -65,11 +68,11 @@ class ConfWriter(ClosableObject):
                     keys.append(setting.key)
                 elif ((setting.key not in self.__unsavable_keys) or
                       (not setting.from_cli)):
-                    self.__write_key_val(keys, val)
+                    self.__write_key_val(keys, val, section)
                     keys = [setting.key]
                     val = str(setting)
         except StopIteration:
-            self.__write_key_val(keys, val)
+            self.__write_key_val(keys, val, section)
 
     def __write_section_name(self, name):
         assert not self.__closed
@@ -77,7 +80,7 @@ class ConfWriter(ClosableObject):
         self.__file.write(self.__section_name_surrounding_beg + name +
                           self.__section_name_surrounding_end + '\n')
 
-    def __write_key_val(self, keys, val):
+    def __write_key_val(self, keys, val, section):
         assert not self.__closed
 
         if keys == []:
@@ -89,15 +92,35 @@ class ConfWriter(ClosableObject):
 
         # Add escape characters as appropriate
         keys = [escape(key, chain(['\\'],
-                                  self.__key_value_delimiters,
+                                  self.__key_value_define_delimiters,
                                   self.__comment_separators,
                                   self.__key_delimiters,
                                   self.__section_override_delimiters))
                 for key in keys]
         val = escape(val, chain(['\\'], self.__comment_separators))
 
-        self.__file.write((self.__key_delimiter + ' ').join(keys) + ' ' +
-                          self.__key_value_delimiter + ' ' + val + '\n')
+        append_keys = []
+        for key in keys:
+            if (section.defaults and
+                    (key in section.defaults and
+                     (val.startswith(str(section.defaults[key])+',')))):
+                append_keys.append(key)
+
+        if append_keys:
+            def_val_list = str(section.defaults[append_keys[0]]).split(
+                self.__key_delimiter)
+            append_val = (self.__key_delimiter + ' ').join(
+                [v.strip() for v in val.split(self.__key_delimiter)
+                 if v not in def_val_list])
+            self.__file.write((self.__key_delimiter + ' ').join(append_keys) +
+                              ' ' + self.__key_value_append_delimiter + ' ' +
+                              append_val + '\n')
+            keys = [key for key in keys if key not in append_keys]
+
+        if keys:
+            self.__file.write((self.__key_delimiter + ' ').join(keys) + ' ' +
+                              self.__key_value_define_delimiter + ' ' + val +
+                              '\n')
 
     @staticmethod
     def is_comment(key):

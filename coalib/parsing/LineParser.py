@@ -7,7 +7,8 @@ from coala_utils.string_processing import (unescape, convert_to_raw,
 class LineParser:
 
     def __init__(self,
-                 key_value_delimiters=('=',),
+                 key_value_define_delimiters=('=',),
+                 key_value_append_delimiters=('+=',),
                  comment_separators=('#',),
                  key_delimiters=(',', ' '),
                  section_name_surroundings=None,
@@ -36,7 +37,8 @@ class LineParser:
             {'[': ']'} if section_name_surroundings is None
             else section_name_surroundings)
 
-        self.key_value_delimiters = key_value_delimiters
+        self.key_value_define_delimiters = key_value_define_delimiters
+        self.key_value_append_delimiters = key_value_append_delimiters
         self.comment_separators = comment_separators
         self.key_delimiters = key_delimiters
         self.section_name_surroundings = section_name_surroundings
@@ -57,17 +59,24 @@ class LineParser:
             self.comment_separators)
         comment = unescape(comment)
         if line == '':
-            return '', [], '', comment
+            return '', [], '', False, comment
 
         section_name = unescape(self.__get_section_name(line))
         if section_name != '':
-            return section_name, [], '', comment
+            return section_name, [], '', False, comment
 
         # Escapes in value might be needed by the bears
-        keys, value = self.__extract_keys_and_value(line)
+        append = True
+        keys, value = self.__extract_keys_and_value(
+            line, self.key_value_append_delimiters)
+        if not value:
+            keys, value = self.__extract_keys_and_value(
+                line, self.key_value_define_delimiters)
+            append = False
 
         # Add all the delimiters that stored as tuples
-        all_delimiters = self.key_value_delimiters
+        all_delimiters = self.key_value_define_delimiters
+        all_delimiters += self.key_value_append_delimiters
         all_delimiters += self.key_delimiters
         all_delimiters += self.comment_separators
         all_delimiters += self.section_override_delimiters
@@ -90,7 +99,7 @@ class LineParser:
                 True)
             key_tuples.append((unescape(section), unescape(key)))
 
-        return '', key_tuples, value, comment
+        return '', key_tuples, value, append, comment
 
     @staticmethod
     def __separate_by_first_occurrence(string,
@@ -148,12 +157,19 @@ class LineParser:
 
         return ''
 
-    def __extract_keys_and_value(self, line):
+    def __extract_keys_and_value(self, line, delimiters):
+        """
+        This method extracts the keys and values from the give string by
+        splitting them based on the delimiters provided.
+        :param line:       The input string.
+        :param delimiters: A list of delimiters to split the strings on.
+        """
         key_part, value = self.__separate_by_first_occurrence(
             line,
-            self.key_value_delimiters,
+            delimiters,
             True,
-            True)
+            # To return empty value in case of no append delimiter is found.
+            delimiters == self.key_value_define_delimiters)
         keys = list(StringConverter(
             key_part,
             list_delimiters=self.key_delimiters).__iter__(

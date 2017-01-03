@@ -13,6 +13,7 @@ from coalib.output.printers.LogPrinter import LogPrinter
 from coala_utils.string_processing import escape
 from coalib.settings.ConfigurationGathering import (
     find_user_config, gather_configuration, load_configuration)
+from coalib.settings.Section import append_to_sections
 
 
 @pytest.mark.usefixtures('disable_bears')
@@ -281,3 +282,32 @@ class ConfigurationGatheringTest(unittest.TestCase):
                     ['--no-config', '--find-config'],
                     self.log_printer)
                 self.assertEqual(cm.exception.code, 2)
+
+    def test_section_inheritance(self):
+        current_dir = os.path.abspath(os.path.dirname(__file__))
+        test_dir = os.path.join(current_dir, 'section_manager_test_files')
+
+        with change_directory(test_dir):
+            sections, _, _, _ = gather_configuration(
+                lambda *args: True,
+                self.log_printer,
+                arg_list=['-c', 'inherit_coafile'])
+            self.assertEqual(sections['all.python'].defaults, sections['all'])
+            self.assertEqual(sections['all.c']['config'],
+                             sections['default']['config'])
+            self.assertEqual(sections['java.test'].defaults,
+                             sections['default'])
+            self.assertEqual(int(sections['all.python']['max_line_length']),
+                             80)
+            self.assertEqual(sections['all.python.codestyle'].defaults,
+                             sections['all.python'])
+            self.assertEqual(sections['all.java.codestyle'].defaults,
+                             sections['all'])
+            self.assertEqual(str(sections['all']['ignore']),
+                             './vendor')
+            sections['default']['ignore'] = './user'
+            self.assertEqual(str(sections['all']['ignore']),
+                             './user,./vendor')
+            sections['default']['ignore'] = './client'
+            self.assertEqual(str(sections['all']['ignore']),
+                             './client,./vendor')

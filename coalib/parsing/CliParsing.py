@@ -10,7 +10,8 @@ from coalib.settings.Section import Section, append_to_sections
 def parse_cli(arg_list=None,
               origin=os.getcwd(),
               arg_parser=None,
-              key_value_delimiters=('=', ':'),
+              key_value_define_delimiters=('=', ':'),
+              key_value_append_delimiters=('+=',),
               comment_seperators=(),
               key_delimiters=(',',),
               section_override_delimiters=('.',)):
@@ -22,8 +23,12 @@ def parse_cli(arg_list=None,
                                         paths given as argument.
     :param arg_parser:                  Instance of ArgParser that is used to
                                         parse none-setting arguments.
-    :param key_value_delimiters:        Delimiters to separate key and value
-                                        in setting arguments.
+    :param key_value_define_delimiters: Delimiters to separate key and value
+                                        in setting arguments where settings are
+                                        being defined.
+    :param key_value_append_delimiters: Delimiters to separate key and value
+                                        in setting arguments where settings are
+                                        being appended.
     :param comment_seperators:          Allowed prefixes for comments.
     :param key_delimiters:              Delimiter to separate multiple keys of
                                         a setting argument.
@@ -37,7 +42,8 @@ def parse_cli(arg_list=None,
     arg_parser = default_arg_parser() if arg_parser is None else arg_parser
     origin += os.path.sep
     sections = OrderedDict(default=Section('Default'))
-    line_parser = LineParser(key_value_delimiters,
+    line_parser = LineParser(key_value_define_delimiters,
+                             key_value_append_delimiters,
                              comment_seperators,
                              key_delimiters,
                              {},
@@ -76,12 +82,14 @@ def parse_custom_settings(sections,
     :param line_parser:          The LineParser to use.
     """
     for setting_definition in custom_settings_list:
-        (_, key_tuples, value, _) = line_parser.parse(setting_definition)
+        (_, key_tuples, value, append, _) = line_parser.parse(
+            setting_definition)
         for key_tuple in key_tuples:
             append_to_sections(sections,
                                key=key_tuple[1],
                                value=value,
                                origin=origin,
+                               to_append=append,
                                section_name=key_tuple[0],
                                from_cli=True)
 

@@ -41,13 +41,14 @@ class SectionTest(unittest.TestCase):
         defaults.append(Setting('tEsT', 1, 3))
         defaults.append(Setting(' great   ', 3, 8))
         defaults.append(Setting(' great   ', 3, 8), custom_key='custom')
+        uut.add_or_create_setting(Setting('custom', 4, 8, to_append=True))
         uut.add_or_create_setting(Setting(' NEW   ', 'val', 8))
         uut.add_or_create_setting(Setting(' NEW   ', 'vl', 8),
                                   allow_appending=False)
         uut.add_or_create_setting(Setting('new', 'val', 9),
                                   custom_key='teSt ',
                                   allow_appending=True)
-        self.assertEqual(list(uut), ['5', 'test', 'new', 'great', 'custom'])
+        self.assertEqual(list(uut), ['5', 'test', 'custom', 'new', 'great'])
 
         for index in uut:
             t = uut[index]
@@ -58,6 +59,7 @@ class SectionTest(unittest.TestCase):
         self.assertNotIn('       GrEAT !', defaults)
         self.assertNotIn('', defaults)
         self.assertEqual(str(uut['test']), '4\nval')
+        self.assertEqual(str(uut['custom']), '3,4')
         self.assertEqual(int(uut['GREAT ']), 3)
         self.assertRaises(IndexError, uut.__getitem__, 'doesnotexist')
         self.assertRaises(IndexError, uut.__getitem__, 'great', True)
@@ -138,10 +140,24 @@ class SectionTest(unittest.TestCase):
         self.assertEqual(len(sections), 1)
         self.assertEqual(len(sections['default'].contents), 1)
 
-        append_to_sections(sections, 'test1', 'val', 'origin', 'default')
+        append_to_sections(sections,
+                           'test1',
+                           'val',
+                           'origin',
+                           section_name='default')
         self.assertIn('default', sections)
         self.assertEqual(len(sections), 1)
         self.assertEqual(len(sections['default'].contents), 2)
+
+        append_to_sections(sections,
+                           'test1',
+                           'val2',
+                           'origin',
+                           to_append=True,
+                           section_name='section')
+        self.assertEqual(str(sections['section']['test1']), 'val2')
+        sections['section'].set_default_section(sections)
+        self.assertEqual(str(sections['section']['test1']), 'val,val2')
 
     def test_update_setting(self):
         section = Section('section', None)
@@ -185,3 +201,25 @@ class SectionTest(unittest.TestCase):
         root = get_config_directory(section)
         path = os.path.join(glob_escape(root), glob_escape('test2 (1)'), '**')
         self.assertIn(path, section.bear_dirs())
+
+    def test_set_default_section(self):
+        section = Section('section')
+
+        section.set_default_section({})
+        self.assertIsNone(section.defaults)
+
+        sections = {'default': Section('default')}
+        section.set_default_section(sections)
+        self.assertEqual(section.defaults, sections['default'])
+
+        sections = {'all': Section('all'), 'all.python': Section('all.python')}
+        sections['all.python'].set_default_section(sections)
+        self.assertEqual(sections['all.python'].defaults, sections['all'])
+        sections['all.python.codestyle'] = Section('all.python.codestyle')
+        sections['all.python.codestyle'].set_default_section(sections)
+        self.assertEqual(sections['all.python.codestyle'].defaults,
+                         sections['all.python'])
+        sections['all.c.codestyle'] = Section('all.c.codestyle')
+        sections['all.c.codestyle'].set_default_section(sections)
+        self.assertEqual(sections['all.c.codestyle'].defaults,
+                         sections['all'])

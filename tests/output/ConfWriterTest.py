@@ -25,7 +25,8 @@ class ConfWriterTest(unittest.TestCase):
                     '    key\\\\backslash = value\\\\backslash\n'
                     '    key\\,comma = value,comma\n'
                     '    key\\#hash = value\\#hash\n'
-                    '    key\\.dot = value.dot\n')
+                    '    key\\.dot = value.dot\n'
+                    '    a_default = val, val2\n')
 
     def setUp(self):
         self.file = os.path.join(tempfile.gettempdir(), 'ConfParserTestFile')
@@ -64,11 +65,12 @@ class ConfWriterTest(unittest.TestCase):
                        'key\\\\backslash = value\\\\backslash\n',
                        'key\\,comma = value,comma\n',
                        'key\\#hash = value\\#hash\n',
-                       'key\\.dot = value.dot\n']
+                       'key\\.dot = value.dot\n',
+                       'a_default += val2\n']
         self.uut.write_sections(self.conf_parser.parse(self.file))
         self.uut.close()
 
         with open(self.write_file_name, 'r') as f:
             lines = f.readlines()
-
+        self.maxDiff = None
         self.assertEqual(result_file, lines)
