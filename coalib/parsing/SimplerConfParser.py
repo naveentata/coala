@@ -13,7 +13,8 @@ class SimplerConfParser:
 
     def __init__(self,
                  # the rest is for temporary compatibility with ConfParser
-                 key_value_delimiters=('=',),
+                 key_value_define_delimiters=('=',),
+                 key_value_append_delimiters=('+=',),
                  comment_seperators=('#',),
                  key_delimiters=(',', ' '),
                  section_name_surroundings=MappingProxyType({'[': ']'}),
@@ -60,9 +61,13 @@ class SimplerConfParser:
                             value += '\n' + data.strip()
                         else:
                             value += '\n' + line
+                    do_append_value = keys.endswith('+')
+                    if do_append_value:
+                        keys = keys.rstrip('+')
                     for key in map(str.strip, keys.split(',')):
                         section.add_or_create_setting(Setting(
-                            key, value, origin=input_data))
+                            key, value, to_append=do_append_value,
+                            origin=input_data))
                     for comment in comments:
                         self.__add_comment(section, '#' + comment,
                                            origin=input_data)
