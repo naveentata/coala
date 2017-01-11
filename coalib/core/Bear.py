@@ -34,7 +34,7 @@ class Bear:
     ``LANGUAGES`` value which should be a set of string(s):
 
     >>> class SomeBear(Bear):
-    ...     LANGUAGES = {'C', 'CPP','C#', 'D'}
+    ...     LANGUAGES = {'C', 'CPP', 'C#', 'D'}
 
     To indicate the requirements of the bear, assign ``REQUIREMENTS`` a set
     with instances of ``PackageRequirements``.
@@ -191,7 +191,6 @@ class Bear:
             if cp is not False:
                 error_string += ' ' + cp
 
-            logging.error(error_string)
             raise RuntimeError(error_string)
 
     def reset_dependency_results(self):
@@ -311,18 +310,6 @@ class Bear:
             'optional_params': ({param: optional_params[param][0]}
                                 for param in optional_params)}
         return _dict
-
-    @classmethod
-    def missing_dependencies(cls, lst):
-        """
-        Checks if the given list contains all dependencies.
-
-        :param lst:
-            A list of all already resolved bear classes (not instances).
-        :return:
-            A set of missing dependencies.
-        """
-        return set(cls.BEAR_DEPS) - set(lst)
 
     @staticmethod
     def setup_dependencies():

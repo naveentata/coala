@@ -8,17 +8,30 @@ from coalib.settings.Section import Section
 from coalib.settings.Setting import Setting
 
 
+class Bear1(Bear):
+    pass
+
+
+class Bear2(Bear):
+    pass
+
+
+class BearWithAnalysis(Bear):
+    def analyze(self, x: int, y: int, z: int=33):
+        """
+        Analyzes stuff.
+
+        :param x: First value.
+        :param y: Second value.
+        :param z: Third value.
+        """
+        yield x
+        yield y
+        yield z
+
+
 class BearWithPrerequisites(Bear):
     prerequisites_fulfilled = True
-
-    def __init__(self, section, file_dict):
-        Bear.__init__(self, section, file_dict)
-
-        self.was_executed = False
-
-    def run(self):
-        self.was_executed = True
-        return []
 
     @classmethod
     def check_prerequisites(cls):
@@ -47,6 +60,43 @@ class BearTest(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             Bear(Section('test-section'), {}).generate_tasks()
 
+    def test_add_dependency_results(self):
+        section = Section('test-section')
+        filedict = {}
+
+        uut = Bear(section, filedict)
+
+        self.assertEqual(uut.dependency_results,
+                         {})
+
+        bear1 = Bear1(section, filedict)
+        uut.add_dependency_results(bear1, [1, 2, 3])
+
+        self.assertEqual(uut.dependency_results,
+                         {Bear1: [1, 2, 3]})
+
+        bear2 = Bear2(section, filedict)
+        uut.add_dependency_results(bear2, [4, 5, 6])
+
+        self.assertEqual(uut.dependency_results,
+                         {Bear1: [1, 2, 3], Bear2: [4, 5, 6]})
+
+        uut.add_dependency_results(bear1, [7, 8, 9])
+
+        self.assertEqual(uut.dependency_results,
+                         {Bear1: [1, 2, 3, 7, 8, 9], Bear2: [4, 5, 6]})
+
+    def test_execute_task(self):
+        # Test the default implementation of execute_task().
+        section = Section('test-section')
+        filedict = {}
+
+        uut = BearWithAnalysis(section, filedict)
+
+        results = uut.execute_task(10, 20, z=30)
+
+        self.assertEqual(results, [10, 20, 30])
+
     def test_check_prerequisites(self):
         section = Section('test-section')
         filedict = {}
@@ -72,6 +122,18 @@ class BearTest(unittest.TestCase):
             str(cm.exception),
             'The bear BearWithPrerequisites does not fulfill all '
             'requirements. This is on purpose due to running inside a test.')
+
+    def test_get_metadata(self):
+        BearWithAnalysis.get_metadata()
+        # TODO
+
+    def test_get_non_optional_settings(self):
+        BearWithAnalysis.get_non_optional_settings()
+        # TODO
+
+    def test_json(self):
+        pass
+        # TODO
 
     def test_new_result(self):
         bear = Bear(Section('test-section'), {})
