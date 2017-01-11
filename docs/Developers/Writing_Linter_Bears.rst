@@ -218,7 +218,7 @@ We can test our bear like this
     **classname**.
 
 Normally, providing a severity-map is not needed, as coala has a default
-severity-map which recognizes many common words used for severities. Check out
+severity-map which recognizes many common words used for severities. FCheck out
 the API documentation for keywords supported!
 
 Suggest Corrections Using the ``corrected`` Output Format
