@@ -20,7 +20,6 @@ except (ValueError, UnicodeError):
     locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 
 
-assert_supported_version()
 
 
 class BuildPyCommand(setuptools.command.build_py.build_py):
